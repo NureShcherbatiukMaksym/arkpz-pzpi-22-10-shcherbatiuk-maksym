@@ -7,7 +7,6 @@ $dbObject = new mysqli('localhost', 'root', '', 'users_db');
 if ($dbObject->connect_error) {
     die("Connection failed: " . $dbObject->connect_error);
 }
-
 /**
  * Клас для управління користувачами
  * Демонструє використання ООП та інкапсуляції
@@ -16,7 +15,6 @@ class UserManager
 {
     // Приватна змінна для зберігання об'єкта з'єднання з базою даних
     private $db;
-
     // Конструктор, що ініціалізує з'єднання з базою даних
     public function __construct($dbConnection)
     {
