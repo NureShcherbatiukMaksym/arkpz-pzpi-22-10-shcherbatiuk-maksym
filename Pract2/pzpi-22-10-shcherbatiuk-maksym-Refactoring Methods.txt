@@ -1,0 +1,183 @@
+﻿МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ
+УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+Кафедра «Програмна інженерія»
+
+
+ЗВІТ
+до практичного заняття №2 з дисципліни
+«Аналіз та рефакторинг коду»
+На тему: «Методи рефакторингу коду програмного забезпечення»
+
+
+
+Виконав:                                              			Перевірив:
+ст. гр. ПЗПІ-22-10 						ст. викладач кафедри ПІ 
+Щербатюк Максим Олександрович 			Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+
+
+Харків 2024
+     Мета:
+     Ознайомитися з різними методами рефакторингу програмного коду та навчитися використовувати їх на реальних прикладах.
+     
+     Завдання:
+     Обрати три методи рефакторингу коду із книги Мартіна Фаулера «Refactoring. Improving the Design of Existing Code». Створити презентацію де продемонструвати використання обраних методів на своєму коді.
+     
+     Хід роботи:
+     Було обрано мову програмування PHP. У презентації (Додаток Б) продемонстровано застосування цих методів до власного програмного коду PHP.
+     
+     Висновки:
+     Набуто навичок рефакторингу програмного коду, детально розглянуто методи рефакторину програмного коду. 
+     
+     Відео-презентація: 
+     https://youtu.be/rg4NsPEI42c
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     ДОДАТОК А
+     Програмний код, використаний як приклад у презентації.
+     <?php
+     include 'db.php';
+     session_start();
+     $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+     
+     $sort = $_POST['sort'] ?? 'price_asc';
+     $categories = $_POST['categories'] ?? '';
+     $price_min = $_POST['price_min'] ?? 0;
+     $price_max = $_POST['price_max'] ?? PHP_INT_MAX;
+     
+     function build_product_select_query($user_id, &$bind_params) {
+         $sql = "SELECT p.product_id, p.name, p.description, p.price, p.image";
+         if ($user_id !== null) {
+             $sql .= ", (SELECT COUNT(*) FROM wishlist w WHERE w.product_id = p.product_id AND w.user_id = ?) AS in_wishlist";
+             $bind_params[] = $user_id;
+         } else {
+             $sql .= ", 0 AS in_wishlist";
+         }
+         $sql .= " FROM products p";
+         return $sql;
+     }
+     $bind_params = [];
+     $sql = build_product_select_query($user_id, $bind_params);
+     
+     $category_filters = [];
+     if (!empty($categories)) {
+         $categories_array = explode(',', $categories);
+         $categories_placeholders = implode(',', array_fill(0, count($categories_array), '?'));
+         $sql .= " JOIN product_categories pc ON p.category_id = pc.category_id";
+         $category_filters[] = "pc.name IN ($categories_placeholders)";
+         foreach ($categories_array as $category) {
+             $bind_params[] = $category;
+         }
+     }
+     
+     $category_filters[] = "p.price BETWEEN ? AND ?";
+     $bind_params[] = $price_min;
+     $bind_params[] = $price_max;
+     
+     if (!empty($category_filters)) {
+         $sql .= " WHERE " . implode(' AND ', $category_filters);
+     }
+     
+     $sort_options = [
+         'price_asc' => "ORDER BY p.price ASC",
+         'price_desc' => "ORDER BY p.price DESC",
+         'name_asc' => "ORDER BY p.name ASC",
+         'name_desc' => "ORDER BY p.name DESC",
+         'date_desc' => "ORDER BY p.product_id DESC"
+     ];
+     $sql .= " " . ($sort_options[$sort] ?? "ORDER BY p.price ASC");
+     
+     $stmt = $conn->prepare($sql);
+     
+     if (!empty($bind_params)) {
+         $types = str_repeat('s', count($bind_params));
+         $stmt->bind_param($types, ...$bind_params);
+     }
+     
+     $stmt->execute();
+     
+     $result = $stmt->get_result();
+     
+     $products = [];
+     
+     if ($result->num_rows > 0) {
+         while ($row = $result->fetch_assoc()) {
+             $old_price = $row['price'] * 1.25;
+             $in_wishlist = $row['in_wishlist'] > 0;
+     
+             $product = [
+                 'product_id' => $row['product_id'],
+                 'name' => $row['name'],
+                 'description' => $row['description'],
+                 'price' => $row['price'],
+                 'image' => $row['image'],
+                 'old_price' => $old_price,
+                 'in_wishlist' => $in_wishlist
+             ];
+     
+             $products[] = $product;
+         }
+     }
+     
+     
+
+
+
+     Додаток Б
+     Презентація на тему «Методи рефакторингу коду програмного забезпечення».
+
+Рисунок 1 – Вступ
+
+
+Рисунок 2 – Про рефакторинг
+
+
+Рисунок 3 – Використовуваний код
+
+
+Рисунок 4 – Поганий SQL-запит
+
+
+Рисунок 5 – SQL-запит після рефакторингу
+
+
+Рисунок 6 – Поганий код сортування
+
+
+Рисунок 7 – Сортування після рефакторингу
+
+
+Рисунок 8 – Неправильне найменування
+
+
+Рисунок 9 – Найменування після рефакторингу
+
+
+Рисунок 10 – Висновки
+
+
+Рисунок 11 – Список використаної літератури
+
